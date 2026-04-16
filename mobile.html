@@ -1,0 +1,952 @@
+<\!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stratus Coach">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Stratus Voice AI Sales Coach — Mobile PWA">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMGEwYTBhIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzYzNjZmMSI+Uzwv dGV4dD48L3N2Zz4=">
+<title>Stratus Coach</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyYXR1cyBDb2FjaCIsInNob3J0X25hbWUiOiJTdHJhdHVzIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwYTBhMGEiLCJ0aGVtZV9jb2xvciI6IiMwYTBhMGEiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxODAgMTgwJyUzRSUzQ3JlY3Qgd2lkdGg9JzE4MCcgaGVpZ2h0PScxODAnIHJ4PSc0MCcgZmlsbD0nJTIzMGEwYTBhJy8lM0UlM0N0ZXh0IHg9JzkwJyB5PScxMTUnIGZvbnQtc2l6ZT0nOTAnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGZpbGw9JyUyMzYzNjZmMSclM0VTJTNDL3RleHQlM0UlM0Mvc3ZnJTNFIiwic2l6ZXMiOiIxODB4MTgwIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--surface:#111113;--surface2:#1a1a1f;--surface3:#222228;
+  --text:#e8e8ed;--text2:#9898a0;--text3:#58585f;
+  --accent:#6366f1;--accent2:#818cf8;--accent-glow:rgba(99,102,241,.15);
+  --green:#22c55e;--orange:#f97316;--red:#ef4444;
+  --radius:16px;--radius-sm:10px;--radius-xs:8px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+html,body{
+  height:100%;width:100%;overflow:hidden;
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+body{display:flex;flex-direction:column}
+
+/* ── STATUS BAR SPACER ── */
+.status-bar{height:var(--safe-t);min-height:20px;background:var(--bg);flex-shrink:0}
+
+/* ── TOP NAV ── */
+.top-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;padding-left:calc(16px + var(--safe-l));padding-right:calc(16px + var(--safe-r));
+  background:var(--bg);border-bottom:1px solid rgba(255,255,255,.04);
+  flex-shrink:0;
+}
+.top-nav h1{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.top-nav h1 span{color:var(--accent)}
+.nav-actions{display:flex;gap:8px}
+.nav-btn{
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:var(--surface2);color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;transition:all .2s;
+}
+.nav-btn:active{transform:scale(.9);background:var(--surface3)}
+.nav-btn.active{background:var(--accent);color:#fff}
+
+/* ── COACH SELECTOR ── */
+.coach-bar{
+  display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding-left:calc(16px + var(--safe-l));
+}
+.coach-bar::-webkit-scrollbar{display:none}
+.coach-chip{
+  flex-shrink:0;padding:6px 14px;border-radius:20px;
+  background:var(--surface2);border:1px solid transparent;
+  font-size:13px;font-weight:500;color:var(--text2);
+  white-space:nowrap;cursor:pointer;transition:all .2s;
+}
+.coach-chip.active{
+  background:var(--accent-glow);border-color:var(--accent);color:var(--accent2);
+}
+.coach-chip:active{transform:scale(.95)}
+
+/* ── CHAT AREA ── */
+.chat-area{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:12px 16px;padding-left:calc(16px + var(--safe-l));padding-right:calc(16px + var(--safe-r));
+  display:flex;flex-direction:column;gap:12px;
+}
+.chat-area::-webkit-scrollbar{display:none}
+
+/* Welcome */
+.welcome{
+  text-align:center;padding:30px 10px;
+}
+.welcome-icon{
+  width:72px;height:72px;border-radius:24px;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;font-size:36px;
+  box-shadow:0 8px 32px rgba(99,102,241,.3);
+}
+.welcome h2{font-size:22px;font-weight:700;margin-bottom:6px}
+.welcome p{font-size:14px;color:var(--text2);line-height:1.5}
+
+/* Quick actions */
+.quick-actions{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0 10px;
+}
+.quick-btn{
+  padding:8px 14px;border-radius:20px;
+  background:var(--surface2);border:1px solid rgba(255,255,255,.06);
+  font-size:12.5px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.quick-btn:active{transform:scale(.95);background:var(--surface3);color:var(--text)}
+
+/* Messages */
+.msg{
+  max-width:88%;padding:12px 16px;border-radius:var(--radius);
+  font-size:14.5px;line-height:1.55;word-wrap:break-word;
+  animation:msgIn .3s ease;
+}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg.user{
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--accent),#4f46e5);
+  color:#fff;border-bottom-right-radius:4px;
+}
+.msg.ai{
+  align-self:flex-start;
+  background:var(--surface2);border:1px solid rgba(255,255,255,.04);
+  border-bottom-left-radius:4px;
+}
+.msg.ai .coach-label{
+  font-size:11px;font-weight:600;color:var(--accent2);
+  margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;
+}
+.msg.ai p{margin-bottom:8px}
+.msg.ai p:last-child{margin-bottom:0}
+.msg.ai strong{color:var(--accent2)}
+.msg.ai ul,.msg.ai ol{padding-left:18px;margin:6px 0}
+.msg.ai li{margin:3px 0}
+.msg.ai code{
+  background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:13px;
+}
+.msg.ai pre{
+  background:rgba(0,0,0,.3);padding:10px;border-radius:8px;
+  overflow-x:auto;margin:8px 0;font-size:12.5px;
+}
+.typing-indicator{
+  display:flex;gap:4px;padding:14px 18px;
+  align-self:flex-start;background:var(--surface2);
+  border-radius:var(--radius);border-bottom-left-radius:4px;
+}
+.typing-indicator span{
+  width:7px;height:7px;border-radius:50%;background:var(--text3);
+  animation:blink 1.4s infinite;
+}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ── INPUT AREA ── */
+.input-area{
+  flex-shrink:0;
+  background:var(--surface);
+  border-top:1px solid rgba(255,255,255,.04);
+  padding:10px 16px;
+  padding-left:calc(16px + var(--safe-l));
+  padding-right:calc(16px + var(--safe-r));
+  padding-bottom:calc(10px + var(--safe-b));
+}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.input-field{
+  flex:1;min-height:42px;max-height:120px;
+  background:var(--surface2);border:1px solid rgba(255,255,255,.06);
+  border-radius:22px;padding:10px 16px;
+  color:var(--text);font-size:15px;font-family:inherit;
+  resize:none;outline:none;line-height:1.4;
+  transition:border-color .2s;
+}
+.input-field::placeholder{color:var(--text3)}
+.input-field:focus{border-color:var(--accent)}
+.send-btn{
+  width:42px;height:42px;flex-shrink:0;
+  border-radius:50%;border:none;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;font-size:18px;
+}
+.send-btn:active{transform:scale(.9)}
+.send-btn:disabled{opacity:.4}
+.mic-btn{
+  width:42px;height:42px;flex-shrink:0;
+  border-radius:50%;border:2px solid var(--surface3);
+  background:transparent;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;font-size:18px;
+}
+.mic-btn:active{transform:scale(.9)}
+.mic-btn.recording{
+  border-color:var(--red);color:var(--red);
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+
+/* ── SETTINGS PANEL ── */
+.settings-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  z-index:100;opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.settings-overlay.open{opacity:1;pointer-events:auto}
+.settings-panel{
+  position:fixed;bottom:0;left:0;right:0;
+  max-height:85vh;overflow-y:auto;
+  background:var(--surface);
+  border-radius:var(--radius) var(--radius) 0 0;
+  padding:20px;padding-bottom:calc(20px + var(--safe-b));
+  z-index:101;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);
+}
+.settings-overlay.open .settings-panel{transform:translateY(0)}
+.settings-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--surface3);margin:0 auto 16px;
+}
+.settings-panel h3{font-size:17px;font-weight:700;margin-bottom:16px}
+.setting-group{margin-bottom:20px}
+.setting-group label{
+  display:block;font-size:12px;font-weight:600;
+  color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;
+}
+.setting-group select,.setting-group input[type=text],.setting-group input[type=password]{
+  width:100%;padding:10px 14px;border-radius:var(--radius-xs);
+  background:var(--surface2);border:1px solid rgba(255,255,255,.06);
+  color:var(--text);font-size:14px;font-family:inherit;
+  outline:none;-webkit-appearance:none;
+}
+.setting-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239898a0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+}
+.setting-group input:focus,.setting-group select:focus{border-color:var(--accent)}
+.setting-note{font-size:11.5px;color:var(--text3);margin-top:4px}
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;
+}
+.toggle-row span{font-size:14px}
+.toggle{
+  width:48px;height:28px;border-radius:14px;
+  background:var(--surface3);position:relative;
+  cursor:pointer;transition:background .2s;
+}
+.toggle.on{background:var(--accent)}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:22px;height:22px;border-radius:50%;
+  background:#fff;transition:transform .2s;
+}
+.toggle.on::after{transform:translateX(20px)}
+.settings-close{
+  width:100%;padding:12px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:none;
+  color:var(--text);font-size:15px;font-weight:600;
+  cursor:pointer;margin-top:8px;
+}
+.settings-close:active{background:var(--surface3)}
+
+/* ── SPEAKING INDICATOR ── */
+.speaking-bar{
+  display:none;align-items:center;gap:8px;
+  padding:8px 16px;background:var(--surface);
+  border-top:1px solid rgba(255,255,255,.04);
+  flex-shrink:0;
+}
+.speaking-bar.active{display:flex}
+.speaking-waves{display:flex;gap:2px;align-items:center;height:20px}
+.speaking-waves span{
+  width:3px;border-radius:2px;background:var(--accent);
+  animation:wave 1s ease-in-out infinite;
+}
+.speaking-waves span:nth-child(1){height:8px;animation-delay:0s}
+.speaking-waves span:nth-child(2){height:14px;animation-delay:.1s}
+.speaking-waves span:nth-child(3){height:20px;animation-delay:.2s}
+.speaking-waves span:nth-child(4){height:14px;animation-delay:.3s}
+.speaking-waves span:nth-child(5){height:8px;animation-delay:.4s}
+@keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+.speaking-bar .stop-btn{
+  margin-left:auto;padding:6px 14px;border-radius:16px;
+  background:var(--red);border:none;color:#fff;
+  font-size:12px;font-weight:600;cursor:pointer;
+}
+
+/* ── COACHING PREP MODE ── */
+.prep-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  z-index:90;display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.prep-overlay.active{display:flex}
+.prep-card{
+  background:var(--surface);border:1px solid rgba(255,255,255,.06);
+  border-radius:20px;padding:28px 24px;max-width:360px;width:100%;
+  text-align:center;animation:prepIn .4s ease;
+}
+@keyframes prepIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.prep-card .timer{
+  font-size:48px;font-weight:700;color:var(--accent);
+  font-variant-numeric:tabular-nums;margin:16px 0;
+}
+.prep-card h3{font-size:18px;margin-bottom:6px}
+.prep-card p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.5}
+.prep-card .prep-close{
+  padding:10px 28px;border-radius:20px;
+  background:var(--surface2);border:none;
+  color:var(--text);font-size:14px;font-weight:600;cursor:pointer;
+}
+
+/* ── UTILITIES ── */
+.hidden{display:none\!important}
+</style>
+</head>
+<body>
+
+<\!-- STATUS BAR -->
+<div class="status-bar"></div>
+
+<\!-- TOP NAV -->
+<header class="top-nav">
+  <h1><span>S</span>tratus Coach</h1>
+  <div class="nav-actions">
+    <button class="nav-btn" id="voiceToggleBtn" title="Toggle voice output">🔊</button>
+    <button class="nav-btn" id="prepBtn" title="60s prep">⏱</button>
+    <button class="nav-btn" id="clearBtn" title="Clear chat">🗑</button>
+    <button class="nav-btn" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+</header>
+
+<\!-- COACH SELECTOR -->
+<div class="coach-bar" id="coachBar">
+  <div class="coach-chip active" data-coach="executive">🎯 Executive Advisor</div>
+  <div class="coach-chip" data-coach="hype">🔥 Hype Coach</div>
+  <div class="coach-chip" data-coach="technical">🔬 Technical Expert</div>
+  <div class="coach-chip" data-coach="socratic">🤔 Socratic Guide</div>
+</div>
+
+<\!-- CHAT -->
+<div class="chat-area" id="chatArea">
+  <div class="welcome" id="welcomeScreen">
+    <div class="welcome-icon">S</div>
+    <h2>Stratus Sales Coach</h2>
+    <p>Your AI-powered prep partner for the Stratus Aeronautics deal. Ask anything or tap a topic below.</p>
+  </div>
+  <div class="quick-actions" id="quickActions">
+    <button class="quick-btn" data-q="What are the key objections I should expect and how do I handle them?">Key objections</button>
+    <button class="quick-btn" data-q="Give me a concise ROI summary for Stratus that I can deliver in 60 seconds.">ROI summary</button>
+    <button class="quick-btn" data-q="What should our recommended next steps be for this deal?">Next steps</button>
+    <button class="quick-btn" data-q="How should I position us against the competition in this deal?">Competitive positioning</button>
+    <button class="quick-btn" data-q="Break down the pricing structure and how to present it effectively.">Pricing breakdown</button>
+    <button class="quick-btn" data-q="Give me the 30-second elevator pitch for Stratus.">Elevator pitch</button>
+  </div>
+</div>
+
+<\!-- SPEAKING BAR -->
+<div class="speaking-bar" id="speakingBar">
+  <div class="speaking-waves"><span></span><span></span><span></span><span></span><span></span></div>
+  <span style="font-size:13px;color:var(--text2)">Speaking…</span>
+  <button class="stop-btn" id="stopSpeakBtn">Stop</button>
+</div>
+
+<\!-- INPUT -->
+<div class="input-area">
+  <div class="input-row">
+    <button class="mic-btn" id="micBtn" title="Voice input">🎙</button>
+    <textarea class="input-field" id="inputField" placeholder="Ask about the Stratus deal…" rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" title="Send">↑</button>
+  </div>
+</div>
+
+<\!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <div class="settings-handle"></div>
+    <h3>Settings</h3>
+    <div class="setting-group">
+      <label>LLM Provider</label>
+      <select id="providerSelect">
+        <option value="groq">Groq (Free — Llama 3.3 70B)</option>
+        <option value="openai">OpenAI (GPT-4o)</option>
+        <option value="openrouter">OpenRouter</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="Enter API key…">
+      <p class="setting-note">Stored locally on your device only.</p>
+    </div>
+    <div class="setting-group">
+      <label>OpenRouter Model</label>
+      <input type="text" id="orModelInput" placeholder="e.g. google/gemini-2.0-flash-exp:free">
+      <p class="setting-note">Only used when OpenRouter is selected.</p>
+    </div>
+    <div class="setting-group">
+      <label>Voice Output</label>
+      <div class="toggle-row">
+        <span>Enable TTS</span>
+        <div class="toggle" id="ttsToggle"></div>
+      </div>
+      <div class="toggle-row">
+        <span>Premium voice (Kokoro via Replicate)</span>
+        <div class="toggle" id="kokoroToggle"></div>
+      </div>
+      <div class="setting-group" id="replicateKeyGroup" style="margin-top:8px">
+        <label>Replicate API Key</label>
+        <input type="password" id="replicateKeyInput" placeholder="For Kokoro TTS…">
+      </div>
+    </div>
+    <button class="settings-close" id="settingsClose">Done</button>
+  </div>
+</div>
+
+<\!-- PREP OVERLAY -->
+<div class="prep-overlay" id="prepOverlay">
+  <div class="prep-card">
+    <h3>⏱ 60-Second Prep</h3>
+    <p>Choose a topic for a rapid-fire coaching burst</p>
+    <div class="quick-actions" style="margin-bottom:16px">
+      <button class="quick-btn" data-prep="opening">Opening lines</button>
+      <button class="quick-btn" data-prep="objections">Handle objections</button>
+      <button class="quick-btn" data-prep="close">Closing strategy</button>
+      <button class="quick-btn" data-prep="discovery">Discovery questions</button>
+      <button class="quick-btn" data-prep="value">Value proposition</button>
+      <button class="quick-btn" data-prep="executive">Exec presence</button>
+    </div>
+    <button class="prep-close" onclick="document.getElementById('prepOverlay').classList.remove('active')">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STRATUS VOICE AI COACH — MOBILE PWA
+// ═══════════════════════════════════════════════════════════
+
+// ── STRATUS BUSINESS CONTEXT ──
+const STRATUS_CONTEXT = `You are a world-class AI sales coach helping prepare for the Stratus Aeronautics deal. You have deep knowledge of this specific opportunity:
+
+## COMPANY OVERVIEW
+- **Company:** Stratus Aeronautics — a mid-market aerospace & defense manufacturer
+- **HQ:** Wichita, Kansas | 2,200 employees | $480M annual revenue
+- **Core Business:** Precision components for commercial and military aircraft, satellite subsystems, and UAV airframes
+- **Recent News:** Won a $120M subcontract on the USAF Next-Gen Tanker program; expanding into urban air mobility (eVTOL) components
+
+## THE OPPORTUNITY
+- **Deal Size:** $2.4M ARR (3-year contract worth ~$7.2M TCV)
+- **Product:** Enterprise AI-powered supply chain optimization platform
+- **Stage:** Late-stage evaluation — shortlisted to final 2 vendors
+- **Timeline:** Decision expected within 6 weeks; board approval needed
+- **Champion:** Marcus Chen, VP of Supply Chain Operations (reports to COO)
+- **Economic Buyer:** Diana Reeves, COO
+- **Technical Evaluator:** Raj Patel, Director of IT Infrastructure
+- **Procurement Lead:** Sandra Kim, VP of Procurement
+
+## KEY PAIN POINTS
+1. **Supply chain disruptions** — 23% increase in component delays over last 18 months; single-source dependencies on 34% of critical parts
+2. **Inventory carrying costs** — $42M in excess inventory; 15% of warehouse space tied up in slow-moving stock
+3. **Demand forecasting** — Current system (legacy SAP module) has 62% forecast accuracy; industry benchmark is 85%+
+4. **Compliance burden** — ITAR/EAR compliance tracking is manual; 3 near-miss violations in past year
+5. **Supplier visibility** — No real-time visibility into Tier 2/3 supplier health; got blindsided by a key supplier bankruptcy last quarter
+
+## COMPETITIVE LANDSCAPE
+- **Competitor A (Kinaxis):** Strong in aerospace; expensive ($3.1M ARR quoted); 12-month implementation
+- **Competitor B (Blue Yonder):** Broad platform; less defense/ITAR expertise; concerns about acquisition by Panasonic Connect
+- **Our Advantages:** Purpose-built AI for A&D supply chains; ITAR-native compliance engine; 6-month implementation; proven at 3 similar-sized defense contractors; 91% forecast accuracy in production
+
+## ROI CASE
+- **Inventory reduction:** $8-12M reduction in carrying costs over 3 years (conservative)
+- **Disruption avoidance:** Estimated $6M/year in prevented stockouts and line-down events
+- **Compliance automation:** Save 4,200 labor hours/year in ITAR tracking (~$420K)
+- **Forecast improvement:** From 62% to projected 88% accuracy → better production planning
+- **Total 3-year ROI:** $28-34M on a $7.2M investment (3.8-4.7x return)
+- **Payback period:** 7-9 months
+
+## DEAL RISKS
+1. Raj Patel (IT) has concerns about integration with their existing SAP ECC 6.0 and Teamcenter PLM
+2. Sandra Kim (Procurement) is pushing for a 20% discount and extended payment terms
+3. Board requires security audit — we need to schedule this ASAP
+4. Budget may get reallocated if the eVTOL facility expansion goes over budget
+5. Marcus Chen (our champion) is up for a promotion — good if he stays, risk if he moves to a different role
+
+## STAKEHOLDER MAP
+- **Diana Reeves (COO):** Bottom-line focused; wants measurable results within 12 months; former McKinsey consultant; data-driven decision maker
+- **Marcus Chen (VP Supply Chain):** Strong advocate; frustrated with status quo; technically literate; wants to be seen as an innovator
+- **Raj Patel (IT Director):** Cautious; concerned about integration complexity; needs detailed technical architecture; 15 years at Stratus
+- **Sandra Kim (VP Procurement):** Professional negotiator; will push hard on price; respects vendors who hold firm but offer creative deal structures
+- **Jim Torres (CEO):** Not directly involved but Diana will need his sign-off for anything over $2M; ex-military; values reliability and mission-readiness
+
+## NEXT STEPS IN THE DEAL
+1. Technical deep-dive with Raj's team (scheduled)
+2. Executive briefing for Diana (needs scheduling)
+3. Security audit coordination
+4. ROI workshop with Marcus to refine business case for board
+5. Commercial terms negotiation with Sandra
+6. Board presentation (Marcus to present, we support)
+
+Provide specific, actionable coaching based on this deal context. Reference specific people, numbers, and details. Be direct and tactical — this is for someone who knows sales and needs sharp, contextual advice, not generic tips.`;
+
+// ── COACH PERSONALITIES ──
+const COACHES = {
+  executive: {
+    name: 'Executive Advisor',
+    emoji: '🎯',
+    system: `You are an executive-level sales strategist. You speak with authority and precision. You focus on deal strategy, stakeholder management, and business outcomes. You give concise, boardroom-ready advice. You reference specific people and numbers from the deal context. Your tone is confident, direct, and strategic. Keep responses focused and actionable — think McKinsey partner coaching a VP of Sales.\n\n${STRATUS_CONTEXT}`
+  },
+  hype: {
+    name: 'Hype Coach',
+    emoji: '🔥',
+    system: `You are an energizing sales coach who fires people up before big meetings. You're like a championship sports coach in the locker room. You build confidence, remind them of their strengths, and get the adrenaline flowing. You still reference the specific deal details (numbers, names, stakes) but you frame everything with maximum positive energy and conviction. You use short punchy sentences. You make them feel like they're about to WIN. Keep it authentic — not cheesy.\n\n${STRATUS_CONTEXT}`
+  },
+  technical: {
+    name: 'Technical Expert',
+    emoji: '🔬',
+    system: `You are a technical sales consultant specializing in enterprise software for aerospace & defense. You help with technical objections, integration architecture questions, security/compliance positioning, and competitive technical differentiation. You can go deep on SAP integration, ITAR compliance automation, AI/ML forecast models, and cloud security for defense contractors. You're precise and thorough. When discussing technical topics, be specific enough that an IT Director like Raj would respect the depth.\n\n${STRATUS_CONTEXT}`
+  },
+  socratic: {
+    name: 'Socratic Guide',
+    emoji: '🤔',
+    system: `You are a Socratic sales coach. Instead of giving direct answers, you ask powerful questions that help the seller discover insights themselves. You guide them to think through scenarios, anticipate stakeholder reactions, and develop their own strategies. You reference specific deal details in your questions. Your questions are sharp, thought-provoking, and build on each other. After 2-3 questions, you may offer a brief insight, then return to questioning. This develops deeper strategic thinking.\n\n${STRATUS_CONTEXT}`
+  }
+};
+
+// ── PREP TOPICS ──
+const PREP_PROMPTS = {
+  opening: "Give me a killer opening for my next meeting with Diana Reeves (COO). I need to establish credibility and urgency in the first 60 seconds. Be specific to the Stratus deal.",
+  objections: "Rapid-fire: Give me the top 5 objections I'll face in this deal and a one-liner response for each. Include the SAP integration concern from Raj, the pricing pushback from Sandra, and the budget risk.",
+  close: "What's my closing strategy for this deal? Walk me through the sequence of moves to get from where we are now to a signed contract in 6 weeks.",
+  discovery: "Give me 5 sharp discovery questions I should ask in my next meeting that will uncover new information and advance the deal. Make them specific to Stratus's situation.",
+  value: "Help me articulate our value proposition in 3 different ways: one for Diana (business outcomes), one for Marcus (operational wins), and one for Raj (technical fit).",
+  executive: "Coach me on executive presence for the Diana Reeves meeting. How should I carry myself, what language should I use, and what mistakes should I avoid with a former McKinsey consultant?"
+};
+
+// ── STATE ──
+let state = {
+  coach: 'executive',
+  messages: [],
+  ttsEnabled: false,
+  kokoroEnabled: false,
+  voiceOutputEnabled: true,
+  isRecording: false,
+  isSpeaking: false,
+  provider: localStorage.getItem('stratus_provider') || 'groq',
+  apiKey: localStorage.getItem('stratus_apikey') || '',
+  replicateKey: localStorage.getItem('stratus_replicate_key') || '',
+  orModel: localStorage.getItem('stratus_or_model') || 'google/gemini-2.0-flash-exp:free'
+};
+
+// ── ELEMENTS ──
+const $ = id => document.getElementById(id);
+const chatArea = $('chatArea');
+const inputField = $('inputField');
+const sendBtn = $('sendBtn');
+const micBtn = $('micBtn');
+const settingsOverlay = $('settingsOverlay');
+const coachBar = $('coachBar');
+const speakingBar = $('speakingBar');
+const welcomeScreen = $('welcomeScreen');
+const quickActions = $('quickActions');
+const prepOverlay = $('prepOverlay');
+
+// ── AUDIO CONTEXT (iOS unlock) ──
+let audioCtx = null;
+function ensureAudioCtx() {
+  if (\!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+document.addEventListener('touchstart', () => ensureAudioCtx(), { once: true });
+
+// ── AUTO-RESIZE TEXTAREA ──
+inputField.addEventListener('input', () => {
+  inputField.style.height = 'auto';
+  inputField.style.height = Math.min(inputField.scrollHeight, 120) + 'px';
+});
+
+// ── COACH SELECTION ──
+coachBar.addEventListener('click', e => {
+  const chip = e.target.closest('.coach-chip');
+  if (\!chip) return;
+  coachBar.querySelectorAll('.coach-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  state.coach = chip.dataset.coach;
+});
+
+// ── QUICK ACTIONS ──
+quickActions.addEventListener('click', e => {
+  const btn = e.target.closest('.quick-btn');
+  if (\!btn || btn.dataset.prep) return;
+  const q = btn.dataset.q;
+  if (q) sendMessage(q);
+});
+
+// ── PREP MODE ──
+$('prepBtn').addEventListener('click', () => prepOverlay.classList.add('active'));
+prepOverlay.addEventListener('click', e => {
+  const btn = e.target.closest('[data-prep]');
+  if (\!btn) return;
+  prepOverlay.classList.remove('active');
+  sendMessage(PREP_PROMPTS[btn.dataset.prep]);
+});
+
+// ── SETTINGS ──
+$('settingsBtn').addEventListener('click', () => {
+  $('providerSelect').value = state.provider;
+  $('apiKeyInput').value = state.apiKey;
+  $('replicateKeyInput').value = state.replicateKey;
+  $('orModelInput').value = state.orModel;
+  $('ttsToggle').className = 'toggle' + (state.ttsEnabled ? ' on' : '');
+  $('kokoroToggle').className = 'toggle' + (state.kokoroEnabled ? ' on' : '');
+  settingsOverlay.classList.add('open');
+});
+$('settingsClose').addEventListener('click', () => {
+  state.provider = $('providerSelect').value;
+  state.apiKey = $('apiKeyInput').value;
+  state.replicateKey = $('replicateKeyInput').value;
+  state.orModel = $('orModelInput').value;
+  localStorage.setItem('stratus_provider', state.provider);
+  localStorage.setItem('stratus_apikey', state.apiKey);
+  localStorage.setItem('stratus_replicate_key', state.replicateKey);
+  localStorage.setItem('stratus_or_model', state.orModel);
+  settingsOverlay.classList.remove('open');
+});
+settingsOverlay.addEventListener('click', e => {
+  if (e.target === settingsOverlay) $('settingsClose').click();
+});
+$('ttsToggle').addEventListener('click', function() {
+  state.ttsEnabled = \!state.ttsEnabled;
+  this.classList.toggle('on', state.ttsEnabled);
+});
+$('kokoroToggle').addEventListener('click', function() {
+  state.kokoroEnabled = \!state.kokoroEnabled;
+  this.classList.toggle('on', state.kokoroEnabled);
+});
+
+// ── VOICE TOGGLE ──
+$('voiceToggleBtn').addEventListener('click', function() {
+  state.voiceOutputEnabled = \!state.voiceOutputEnabled;
+  this.classList.toggle('active', state.voiceOutputEnabled);
+  if (\!state.voiceOutputEnabled) stopSpeaking();
+});
+
+// ── CLEAR CHAT ──
+$('clearBtn').addEventListener('click', () => {
+  state.messages = [];
+  chatArea.innerHTML = '';
+  chatArea.appendChild(welcomeScreen);
+  chatArea.appendChild(quickActions);
+  welcomeScreen.classList.remove('hidden');
+  quickActions.classList.remove('hidden');
+});
+
+// ── SEND ──
+sendBtn.addEventListener('click', () => {
+  const text = inputField.value.trim();
+  if (\!text) return;
+  inputField.value = '';
+  inputField.style.height = 'auto';
+  sendMessage(text);
+});
+inputField.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && \!e.shiftKey) {
+    e.preventDefault();
+    sendBtn.click();
+  }
+});
+
+// ── SPEECH RECOGNITION ──
+let recognition = null;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.onresult = e => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    inputField.value = transcript;
+    inputField.style.height = 'auto';
+    inputField.style.height = Math.min(inputField.scrollHeight, 120) + 'px';
+    if (e.results[e.results.length - 1].isFinal) {
+      stopRecording();
+      // Auto-send after voice
+      setTimeout(() => sendBtn.click(), 300);
+    }
+  };
+  recognition.onerror = () => stopRecording();
+  recognition.onend = () => stopRecording();
+}
+
+micBtn.addEventListener('click', () => {
+  if (state.isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
+
+function startRecording() {
+  if (\!recognition) {
+    alert('Voice input not supported. Please type your question.');
+    return;
+  }
+  ensureAudioCtx();
+  state.isRecording = true;
+  micBtn.classList.add('recording');
+  try { recognition.start(); } catch(e) {}
+}
+function stopRecording() {
+  state.isRecording = false;
+  micBtn.classList.remove('recording');
+  try { recognition?.stop(); } catch(e) {}
+}
+
+// ── MESSAGE RENDERING ──
+function addMessage(role, text) {
+  welcomeScreen.classList.add('hidden');
+  quickActions.classList.add('hidden');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'ai') {
+    const coach = COACHES[state.coach];
+    div.innerHTML = `<div class="coach-label">${coach.emoji} ${coach.name}</div>` + formatMarkdown(text);
+  } else {
+    div.textContent = text;
+  }
+  chatArea.appendChild(div);
+  scrollToBottom();
+  return div;
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'typing-indicator';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  chatArea.appendChild(div);
+  scrollToBottom();
+}
+function hideTyping() {
+  const el = $('typingIndicator');
+  if (el) el.remove();
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    chatArea.scrollTop = chatArea.scrollHeight;
+  });
+}
+
+function formatMarkdown(text) {
+  return text
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^\s*[-•]\s+(.+)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/^\s*(\d+)\.\s+(.+)/gm, '<li>$2</li>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>')
+    .replace(/<p><\/p>/g, '');
+}
+
+// ── LLM CALL ──
+async function callLLM(messages) {
+  const coach = COACHES[state.coach];
+  const sysMsgs = [{ role: 'system', content: coach.system }];
+  const allMsgs = [...sysMsgs, ...messages];
+
+  let url, headers, body;
+
+  if (state.provider === 'groq') {
+    url = 'https://api.groq.com/openai/v1/chat/completions';
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    };
+    body = { model: 'llama-3.3-70b-versatile', messages: allMsgs, temperature: 0.7, max_tokens: 1500 };
+  } else if (state.provider === 'openai') {
+    url = 'https://api.openai.com/v1/chat/completions';
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    };
+    body = { model: 'gpt-4o', messages: allMsgs, temperature: 0.7, max_tokens: 1500 };
+  } else {
+    url = 'https://openrouter.ai/api/v1/chat/completions';
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    };
+    body = { model: state.orModel, messages: allMsgs, temperature: 0.7, max_tokens: 1500 };
+  }
+
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (\!res.ok) {
+    const errText = await res.text();
+    throw new Error(`API ${res.status}: ${errText.substring(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+// ── TTS ──
+let currentUtterance = null;
+let currentAudio = null;
+
+function speak(text) {
+  if (\!state.voiceOutputEnabled || \!state.ttsEnabled) return;
+  stopSpeaking();
+
+  if (state.kokoroEnabled && state.replicateKey) {
+    speakKokoro(text);
+  } else {
+    speakBrowser(text);
+  }
+}
+
+function speakBrowser(text) {
+  const clean = text.replace(/[*#`_~]/g, '').replace(/<[^>]*>/g, '');
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.rate = 1.05;
+  utt.pitch = 1;
+  currentUtterance = utt;
+  utt.onstart = () => { state.isSpeaking = true; speakingBar.classList.add('active'); };
+  utt.onend = () => { state.isSpeaking = false; speakingBar.classList.remove('active'); };
+  utt.onerror = () => { state.isSpeaking = false; speakingBar.classList.remove('active'); };
+  speechSynthesis.speak(utt);
+}
+
+async function speakKokoro(text) {
+  const clean = text.replace(/[*#`_~]/g, '').replace(/<[^>]*>/g, '').substring(0, 500);
+  state.isSpeaking = true;
+  speakingBar.classList.add('active');
+  try {
+    const res = await fetch('https://api.replicate.com/v1/models/jaaari/kokoro-82m/predictions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.replicateKey}`,
+        'Prefer': 'wait'
+      },
+      body: JSON.stringify({ input: { text: clean, voice: 'af_heart', speed: 1.1 } })
+    });
+    const data = await res.json();
+    if (data.output) {
+      const audioUrl = typeof data.output === 'string' ? data.output : data.output[0];
+      const ctx = ensureAudioCtx();
+      const audioRes = await fetch(audioUrl);
+      const buf = await audioRes.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(buf);
+      const source = ctx.createBufferSource();
+      source.buffer = decoded;
+      source.connect(ctx.destination);
+      source.onended = () => { state.isSpeaking = false; speakingBar.classList.remove('active'); };
+      source.start();
+      currentAudio = source;
+    }
+  } catch (e) {
+    console.warn('Kokoro TTS failed, falling back to browser:', e);
+    speakBrowser(text);
+  }
+}
+
+function stopSpeaking() {
+  speechSynthesis.cancel();
+  if (currentAudio) { try { currentAudio.stop(); } catch(e){} currentAudio = null; }
+  state.isSpeaking = false;
+  speakingBar.classList.remove('active');
+}
+
+$('stopSpeakBtn').addEventListener('click', stopSpeaking);
+
+// ── MAIN SEND ──
+async function sendMessage(text) {
+  if (\!state.apiKey) {
+    $('settingsBtn').click();
+    return;
+  }
+
+  addMessage('user', text);
+  state.messages.push({ role: 'user', content: text });
+  showTyping();
+
+  try {
+    const reply = await callLLM(state.messages);
+    hideTyping();
+    addMessage('ai', reply);
+    state.messages.push({ role: 'assistant', content: reply });
+    speak(reply);
+  } catch (e) {
+    hideTyping();
+    addMessage('ai', `⚠️ Error: ${e.message}\n\nPlease check your API key in Settings.`);
+  }
+
+  // Keep context manageable
+  if (state.messages.length > 20) {
+    state.messages = state.messages.slice(-16);
+  }
+}
+
+// ── SERVICE WORKER REGISTRATION ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'stratus-coach-v1';
+    const ASSETS = ['./', './stratus-coach-mobile.html'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k \!== CACHE).map(k => caches.delete(k)))
+      ).then(() => self.clients.claim()));
+    });
+    self.addEventListener('fetch', e => {
+      if (e.request.method \!== 'GET') return;
+      e.respondWith(
+        caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+          if (res.ok && res.type === 'basic') {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return res;
+        }).catch(() => cached))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── INIT ──
+$('voiceToggleBtn').classList.toggle('active', state.voiceOutputEnabled);
+</script>
+</body>
+</html>
