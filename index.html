@@ -1,0 +1,961 @@
+<\!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stratus Voice AI Coach v2 — Live Slide Vision</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a28;
+    --border: #2a2a3a;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --green: #00e676;
+    --orange: #ff9100;
+    --red: #ff5252;
+    --text: #e8e8f0;
+    --text2: #888898;
+    --glow: rgba(108,92,231,0.3);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Layout */
+  .app { display:grid; grid-template-rows:56px 1fr 72px; height:100vh; }
+
+  /* Header */
+  .header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; background:var(--surface); border-bottom:1px solid var(--border);
+  }
+  .header-left { display:flex; align-items:center; gap:12px; }
+  .logo {
+    width:36px; height:36px; border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), #8b5cf6);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:700;
+  }
+  .header h1 { font-size:16px; font-weight:600; }
+  .header h1 span { color:var(--accent2); font-weight:400; font-size:13px; margin-left:8px; }
+
+  .status-bar { display:flex; align-items:center; gap:16px; }
+  .status-pill {
+    display:flex; align-items:center; gap:6px;
+    padding:4px 12px; border-radius:20px; font-size:12px; font-weight:500;
+    background:var(--surface2); border:1px solid var(--border);
+  }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--text2); transition:background 0.3s;
+  }
+  .status-dot.active { background:var(--green); box-shadow:0 0 8px var(--green); }
+  .status-dot.watching { background:var(--orange); box-shadow:0 0 8px var(--orange); animation:pulse 1.5s infinite; }
+  .status-dot.speaking { background:var(--accent2); box-shadow:0 0 8px var(--accent2); animation:pulse 0.8s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Main area */
+  .main { display:grid; grid-template-columns:1fr 380px; gap:0; overflow:hidden; }
+
+  /* Chat panel */
+  .chat-panel {
+    display:flex; flex-direction:column; border-right:1px solid var(--border);
+    position:relative;
+  }
+  .chat-messages {
+    flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;
+  }
+  .chat-messages::-webkit-scrollbar { width:6px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  .msg {
+    max-width:85%; padding:12px 16px; border-radius:16px;
+    font-size:14px; line-height:1.5; animation:fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .msg.ai {
+    align-self:flex-start; background:var(--surface2); border:1px solid var(--border);
+    border-bottom-left-radius:4px;
+  }
+  .msg.user {
+    align-self:flex-end; background:var(--accent); color:white;
+    border-bottom-right-radius:4px;
+  }
+  .msg.system {
+    align-self:center; background:transparent; color:var(--text2);
+    font-size:12px; text-align:center; padding:4px 8px;
+  }
+  .msg .label {
+    font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
+    margin-bottom:4px; color:var(--accent2);
+  }
+  .msg.user .label { color:rgba(255,255,255,0.7); }
+
+  /* Right panel */
+  .right-panel {
+    display:flex; flex-direction:column; background:var(--surface);
+  }
+  .panel-section {
+    padding:16px; border-bottom:1px solid var(--border);
+  }
+  .panel-section h3 {
+    font-size:12px; font-weight:600; text-transform:uppercase;
+    letter-spacing:1px; color:var(--text2); margin-bottom:12px;
+  }
+
+  /* Screen preview */
+  .screen-preview {
+    width:100%; aspect-ratio:16/9; border-radius:8px;
+    background:var(--bg); border:2px dashed var(--border);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden; position:relative; cursor:pointer;
+    transition:border-color 0.3s;
+  }
+  .screen-preview:hover { border-color:var(--accent); }
+  .screen-preview.active { border:2px solid var(--green); }
+  .screen-preview img, .screen-preview video {
+    width:100%; height:100%; object-fit:contain;
+  }
+  .screen-preview .placeholder {
+    text-align:center; color:var(--text2); font-size:13px;
+  }
+  .screen-preview .placeholder .icon { font-size:32px; margin-bottom:8px; }
+
+  /* Slide coaching area */
+  .slide-coaching {
+    flex:1; overflow-y:auto; padding:16px;
+  }
+  .slide-coaching::-webkit-scrollbar { width:4px; }
+  .slide-coaching::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .coaching-card {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:14px; margin-bottom:10px;
+    font-size:13px; line-height:1.5;
+  }
+  .coaching-card .card-label {
+    font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:1px; margin-bottom:6px; color:var(--orange);
+  }
+  .coaching-card.talking-points .card-label { color:var(--green); }
+  .coaching-card.data .card-label { color:var(--accent2); }
+  .coaching-card.objection .card-label { color:var(--red); }
+
+  /* Controls footer */
+  .footer {
+    display:flex; align-items:center; justify-content:center; gap:12px;
+    padding:0 20px; background:var(--surface); border-top:1px solid var(--border);
+  }
+  .btn {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 20px; border-radius:12px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text); font-size:13px; font-weight:500;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .btn:hover { background:var(--border); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:white; }
+  .btn.primary:hover { background:#5b4bd6; }
+  .btn.danger { background:var(--red); border-color:var(--red); color:white; }
+  .btn.active { background:var(--green); border-color:var(--green); color:#000; }
+  .btn .icon { font-size:16px; }
+  .btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+  /* Voice visualizer */
+  .voice-viz {
+    display:flex; align-items:center; gap:2px; height:24px;
+  }
+  .voice-viz .bar {
+    width:3px; border-radius:2px; background:var(--accent);
+    transition:height 0.1s;
+  }
+
+  /* Settings overlay */
+  .settings-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.7);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100; opacity:0; pointer-events:none; transition:opacity 0.3s;
+  }
+  .settings-overlay.open { opacity:1; pointer-events:all; }
+  .settings-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; padding:28px; width:460px; max-height:80vh; overflow-y:auto;
+  }
+  .settings-card h2 { margin-bottom:20px; font-size:18px; }
+  .field { margin-bottom:16px; }
+  .field label {
+    display:block; font-size:12px; font-weight:600; color:var(--text2);
+    text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;
+  }
+  .field input, .field select, .field textarea {
+    width:100%; padding:10px 14px; border-radius:8px;
+    background:var(--bg); border:1px solid var(--border);
+    color:var(--text); font-size:14px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline:none; border-color:var(--accent);
+  }
+  .field small { color:var(--text2); font-size:11px; margin-top:4px; display:block; }
+  .field-row { display:flex; gap:12px; }
+  .field-row .field { flex:1; }
+
+  /* Waveform animation for speaking */
+  @keyframes wave {
+    0%,100% { height:4px; }
+    50% { height:18px; }
+  }
+  .speaking .voice-viz .bar {
+    animation: wave 0.6s ease-in-out infinite;
+  }
+  .speaking .voice-viz .bar:nth-child(2) { animation-delay:0.1s; }
+  .speaking .voice-viz .bar:nth-child(3) { animation-delay:0.2s; }
+  .speaking .voice-viz .bar:nth-child(4) { animation-delay:0.1s; }
+  .speaking .voice-viz .bar:nth-child(5) { animation-delay:0.15s; }
+
+  /* Responsive */
+  @media (max-width:900px) {
+    .main { grid-template-columns:1fr; }
+    .right-panel { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <\!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">S</div>
+      <h1>Stratus AI Coach <span>v2 — Live Vision</span></h1>
+    </div>
+    <div class="status-bar">
+      <div class="status-pill" id="statusListening">
+        <div class="status-dot" id="dotListening"></div>
+        <span>Listening</span>
+      </div>
+      <div class="status-pill" id="statusWatching">
+        <div class="status-dot" id="dotWatching"></div>
+        <span>Watching</span>
+      </div>
+      <div class="status-pill" id="statusSpeaking">
+        <div class="status-dot" id="dotSpeaking"></div>
+        <span>Speaking</span>
+      </div>
+      <div class="voice-viz" id="voiceViz">
+        <div class="bar" style="height:4px"></div>
+        <div class="bar" style="height:4px"></div>
+        <div class="bar" style="height:4px"></div>
+        <div class="bar" style="height:4px"></div>
+        <div class="bar" style="height:4px"></div>
+      </div>
+      <button class="btn" onclick="openSettings()" style="padding:6px 12px;">⚙️</button>
+    </div>
+  </div>
+
+  <\!-- MAIN -->
+  <div class="main">
+    <\!-- Chat -->
+    <div class="chat-panel">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg system">Stratus AI Coach ready. Click 🎙️ to start voice, 🖥️ to share screen.</div>
+      </div>
+    </div>
+
+    <\!-- Right panel -->
+    <div class="right-panel">
+      <div class="panel-section">
+        <h3>🖥️ Screen Capture</h3>
+        <div class="screen-preview" id="screenPreview" onclick="toggleScreenCapture()">
+          <video id="screenVideo" style="display:none;" muted></video>
+          <canvas id="screenCanvas" style="display:none;"></canvas>
+          <img id="screenSnapshot" style="display:none;">
+          <div class="placeholder" id="screenPlaceholder">
+            <div class="icon">🖥️</div>
+            <div>Click to share screen</div>
+            <div style="font-size:11px;margin-top:4px;">AI will see your slides</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-section" style="flex-shrink:0;">
+        <h3>📊 Capture Settings</h3>
+        <div class="field-row" style="margin-bottom:0;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Interval (sec)</label>
+            <input type="number" id="captureInterval" value="8" min="3" max="60" style="width:100%;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Mode</label>
+            <select id="captureMode" style="width:100%;">
+              <option value="auto">Auto (timed)</option>
+              <option value="manual">Manual only</option>
+              <option value="onChange">On slide change</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="slide-coaching" id="slideCoaching">
+        <div class="coaching-card talking-points">
+          <div class="card-label">💡 Getting Started</div>
+          Share your screen and start speaking. The AI will analyze your slides and provide real-time coaching — talking points, data callouts, and objection handling.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <\!-- FOOTER -->
+  <div class="footer">
+    <button class="btn" id="btnMic" onclick="toggleMic()">
+      <span class="icon">🎙️</span> Start Voice
+    </button>
+    <button class="btn" id="btnScreen" onclick="toggleScreenCapture()">
+      <span class="icon">🖥️</span> Share Screen
+    </button>
+    <button class="btn" id="btnSnapshot" onclick="captureAndAnalyze()" disabled>
+      <span class="icon">📸</span> Analyze Slide
+    </button>
+    <button class="btn" id="btnSpeak" onclick="toggleAutoSpeak()">
+      <span class="icon">🔊</span> Auto-Speak: ON
+    </button>
+  </div>
+</div>
+
+<\!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-card">
+    <h2>⚙️ API Configuration</h2>
+    <div class="field">
+      <label>Groq API Key (free — text LLM)</label>
+      <input type="password" id="groqKey" placeholder="gsk_...">
+      <small>Get free key at <a href="https://console.groq.com" target="_blank" style="color:var(--accent2)">console.groq.com</a></small>
+    </div>
+    <div class="field">
+      <label>Vision API Provider</label>
+      <select id="visionProvider">
+        <option value="openai">OpenAI (GPT-4o)</option>
+        <option value="openrouter">OpenRouter (Claude/GPT-4o)</option>
+        <option value="groq">Groq Vision (Llama 3.2 90B)</option>
+      </select>
+    </div>
+    <div class="field" id="openaiKeyField">
+      <label>OpenAI API Key (for vision)</label>
+      <input type="password" id="openaiKey" placeholder="sk-...">
+      <small>Needed only for slide vision analysis</small>
+    </div>
+    <div class="field" id="openrouterKeyField" style="display:none;">
+      <label>OpenRouter API Key</label>
+      <input type="password" id="openrouterKey" placeholder="sk-or-...">
+    </div>
+    <div class="field">
+      <label>Replicate API Key (Kokoro TTS)</label>
+      <input type="password" id="replicateKey" placeholder="r8_...">
+      <small>For natural Kokoro voice. Falls back to browser TTS if empty.</small>
+    </div>
+    <div class="field">
+      <label>Kokoro Voice</label>
+      <select id="kokoroVoice">
+        <option value="af_heart">Heart (Female, warm)</option>
+        <option value="af_bella">Bella (Female, professional)</option>
+        <option value="am_adam" selected>Adam (Male, confident)</option>
+        <option value="am_michael">Michael (Male, calm)</option>
+        <option value="bf_emma">Emma (British Female)</option>
+        <option value="bm_george">George (British Male)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Coach Personality</label>
+      <select id="coachPersonality">
+        <option value="executive">Executive Advisor</option>
+        <option value="hype">Hype Coach</option>
+        <option value="technical">Technical Expert</option>
+        <option value="socratic">Socratic Guide</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button class="btn primary" onclick="saveSettings()">Save & Close</button>
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const state = {
+  isListening: false,
+  isWatching: false,
+  isSpeaking: false,
+  autoSpeak: true,
+  screenStream: null,
+  captureTimer: null,
+  recognition: null,
+  currentTranscript: '',
+  messages: [],
+  lastSlideB64: null,
+  lastSlideDescription: '',
+  audioQueue: [],
+  isPlayingAudio: false,
+  previousFrameHash: null,
+};
+
+// ===== STRATUS DEAL CONTEXT =====
+const STRATUS_CONTEXT = `You are the Stratus AI Coach — an elite sales co-pilot for Jeremie Hicks, a senior AE at Anthropic.
+
+## DEAL CONTEXT: Stratus Cloud Solutions
+- **Company**: Stratus Cloud Solutions — mid-market cloud infra company, ~800 employees, $150M ARR
+- **Champion**: Dana Park, VP of Engineering — technically sharp, pragmatic, wants measurable ROI
+- **Economic Buyer**: Marcus Chen, CTO — strategic thinker, focused on competitive moat & talent retention
+- **Key Stakeholders**: Sarah Kim (Head of ML Platform), Raj Patel (Director of DevOps), Lisa Wong (CFO office - budget approval)
+- **Deal Size**: $1.2M ARR (3-year commit preferred), ~400 seats across engineering + data science
+- **Stage**: Late-stage evaluation / proposal. POC completed successfully with 3 teams.
+- **Competition**: OpenAI (incumbent on GPT-4 for internal tools), Cohere (enterprise pitch), Google Gemini (bundled with GCP)
+- **Timeline**: Decision by end of Q2. Budget cycle ends June 30.
+
+## POC RESULTS (share when relevant):
+- 40% reduction in code review time (measured across 3 sprint cycles)
+- Developer NPS went from baseline to 72 during POC
+- 3 teams adopted voluntarily without mandate — organic pull
+- Zero security incidents; SOC2 + HIPAA compliance verified
+- Dana's team reported "best AI tooling experience we've tested"
+
+## COMPETITIVE INTEL:
+- OpenAI: Strong brand, but their enterprise offering is immature. No on-prem, limited fine-tuning, unpredictable pricing.
+- Cohere: Good enterprise story but weaker model performance. Stratus tried them — "fine for simple tasks, fell apart on complex reasoning."
+- Google: Bundling with GCP discount but Stratus is multi-cloud (AWS primary). Lock-in concern.
+
+## PRICING & PACKAGING:
+- Proposed: $250/seat/month (400 seats = $100K/month = $1.2M/year)
+- 3-year commit: 15% discount → $1.02M/year ($3.06M TCV)
+- Volume tier: If they expand to 600+ seats → drops to $220/seat
+- ROI model shows 5.2x return based on POC productivity gains
+
+## OBJECTION HANDLING GUIDE:
+- "OpenAI is good enough" → POC data shows 40% better on complex reasoning tasks. Enterprise features (SSO, audit logs, data residency) are production-ready today.
+- "Too expensive" → $250/seat vs. OpenAI enterprise at $60/seat seems more, but factor in: fewer tokens needed (Claude is more efficient), no need for prompt engineering team, built-in safety = less risk budget.
+- "We need on-prem" → Anthropic offers AWS Bedrock deployment and private API endpoints. Data never leaves their VPC.
+- "What about Gemini bundled with GCP?" → Stratus is multi-cloud. Don't trade infrastructure flexibility for an AI discount. Claude works everywhere.
+
+## YOUR COACHING DIRECTIVES:
+1. When you see a slide, immediately identify the key message and suggest 2-3 powerful talking points
+2. If you detect data/charts, call out the most compelling numbers to emphasize
+3. Anticipate objections the audience might raise for each slide and prepare rebuttals
+4. Keep coaching concise — bullet points, not paragraphs. Jeremie needs quick-glance guidance.
+5. If Jeremie asks you something verbally, prioritize answering his question over slide analysis
+6. Always tie back to concrete POC results and ROI when possible
+7. Match the presentation energy — be confident, data-driven, and compelling`;
+
+// ===== PERSONALITY PROMPTS =====
+const PERSONALITIES = {
+  executive: "You speak like a seasoned CRO whispering strategy in the ear of a top AE. Confident, concise, every word has weight. Use phrases like 'lean into this', 'this is your close moment', 'let the data speak'.",
+  hype: "You're an energetic coach pumping up your star player. Confident, bold, use action words. 'Crush this slide\!', 'Drop that ROI bomb\!', 'They can't argue with those numbers\!'",
+  technical: "You focus on technical accuracy and precision. When you see architecture diagrams or technical slides, go deep. Help Jeremie sound like the smartest person in the room on technical details.",
+  socratic: "Guide through questions. 'What if you asked them about their current review time?', 'Have you considered leading with the security angle here?'. Help Jeremie discover the best approach."
+};
+
+// ===== SETTINGS =====
+function loadSettings() {
+  const keys = ['groqKey','openaiKey','openrouterKey','replicateKey','kokoroVoice','coachPersonality','visionProvider'];
+  keys.forEach(k => {
+    const el = document.getElementById(k);
+    const val = localStorage.getItem('stratus_' + k);
+    if (val && el) el.value = val;
+  });
+  updateVisionFields();
+}
+
+function saveSettings() {
+  const keys = ['groqKey','openaiKey','openrouterKey','replicateKey','kokoroVoice','coachPersonality','visionProvider'];
+  keys.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) localStorage.setItem('stratus_' + k, el.value);
+  });
+  closeSettings();
+  addSystemMsg('Settings saved ✓');
+}
+
+function openSettings() { document.getElementById('settingsOverlay').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
+
+document.getElementById('visionProvider').addEventListener('change', updateVisionFields);
+function updateVisionFields() {
+  const provider = document.getElementById('visionProvider').value;
+  document.getElementById('openaiKeyField').style.display = provider === 'openai' ? '' : 'none';
+  document.getElementById('openrouterKeyField').style.display = provider === 'openrouter' ? '' : 'none';
+}
+
+// ===== CHAT UI =====
+function addMsg(role, text) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  const label = role === 'ai' ? 'Coach' : role === 'user' ? 'You' : '';
+  el.innerHTML = label ? `<div class="label">${label}</div>${formatText(text)}` : formatText(text);
+  document.getElementById('chatMessages').appendChild(el);
+  el.scrollIntoView({ behavior:'smooth' });
+  state.messages.push({ role, text });
+}
+function addSystemMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg system';
+  el.textContent = text;
+  document.getElementById('chatMessages').appendChild(el);
+  el.scrollIntoView({ behavior:'smooth' });
+}
+function formatText(t) {
+  return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n- /g, '<br>• ')
+    .replace(/\n\d+\. /g, (m) => '<br>' + m.trim() + ' ')
+    .replace(/\n/g, '<br>');
+}
+
+// ===== SLIDE COACHING UI =====
+function updateCoachingPanel(analysis) {
+  const panel = document.getElementById('slideCoaching');
+  panel.innerHTML = '';
+  if (analysis.talkingPoints) {
+    panel.innerHTML += `<div class="coaching-card talking-points"><div class="card-label">💡 Talking Points</div>${formatText(analysis.talkingPoints)}</div>`;
+  }
+  if (analysis.data) {
+    panel.innerHTML += `<div class="coaching-card data"><div class="card-label">📊 Key Data</div>${formatText(analysis.data)}</div>`;
+  }
+  if (analysis.objections) {
+    panel.innerHTML += `<div class="coaching-card objection"><div class="card-label">🛡️ Objection Prep</div>${formatText(analysis.objections)}</div>`;
+  }
+  if (analysis.raw) {
+    panel.innerHTML += `<div class="coaching-card"><div class="card-label">🎯 Coach Says</div>${formatText(analysis.raw)}</div>`;
+  }
+}
+
+// ===== STATUS INDICATORS =====
+function setStatus(which, active) {
+  const dot = document.getElementById('dot' + which.charAt(0).toUpperCase() + which.slice(1));
+  if (dot) {
+    dot.className = 'status-dot' + (active ? (' ' + (which === 'listening' ? 'active' : which === 'watching' ? 'watching' : 'speaking')) : '');
+  }
+  if (which === 'speaking') {
+    document.getElementById('voiceViz').parentElement.classList.toggle('speaking', active);
+  }
+}
+
+// ===== VOICE RECOGNITION =====
+function toggleMic() {
+  if (state.isListening) stopMic();
+  else startMic();
+}
+
+function startMic() {
+  if (\!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    addSystemMsg('Speech recognition not supported in this browser. Use Chrome.');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  state.recognition = new SR();
+  state.recognition.continuous = true;
+  state.recognition.interimResults = true;
+  state.recognition.lang = 'en-US';
+
+  state.recognition.onresult = (e) => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (final.trim()) {
+      addMsg('user', final.trim());
+      handleUserInput(final.trim());
+    }
+  };
+
+  state.recognition.onerror = (e) => {
+    if (e.error \!== 'no-speech') addSystemMsg('Mic error: ' + e.error);
+  };
+  state.recognition.onend = () => {
+    if (state.isListening) state.recognition.start(); // auto-restart
+  };
+
+  state.recognition.start();
+  state.isListening = true;
+  setStatus('listening', true);
+  document.getElementById('btnMic').innerHTML = '<span class="icon">⏹️</span> Stop Voice';
+  document.getElementById('btnMic').classList.add('active');
+  addSystemMsg('🎙️ Listening...');
+}
+
+function stopMic() {
+  if (state.recognition) {
+    state.isListening = false;
+    state.recognition.stop();
+    state.recognition = null;
+  }
+  setStatus('listening', false);
+  document.getElementById('btnMic').innerHTML = '<span class="icon">🎙️</span> Start Voice';
+  document.getElementById('btnMic').classList.remove('active');
+  addSystemMsg('Mic off.');
+}
+
+// ===== SCREEN CAPTURE =====
+async function toggleScreenCapture() {
+  if (state.screenStream) {
+    stopScreenCapture();
+  } else {
+    await startScreenCapture();
+  }
+}
+
+async function startScreenCapture() {
+  try {
+    state.screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'always', frameRate: 1 },
+      audio: false
+    });
+    const video = document.getElementById('screenVideo');
+    video.srcObject = state.screenStream;
+    video.style.display = 'block';
+    video.play();
+    document.getElementById('screenPlaceholder').style.display = 'none';
+    document.getElementById('screenPreview').classList.add('active');
+
+    state.screenStream.getVideoTracks()[0].onended = () => stopScreenCapture();
+
+    state.isWatching = true;
+    setStatus('watching', true);
+    document.getElementById('btnScreen').innerHTML = '<span class="icon">⏹️</span> Stop Sharing';
+    document.getElementById('btnScreen').classList.add('danger');
+    document.getElementById('btnSnapshot').disabled = false;
+
+    addSystemMsg('🖥️ Screen shared — AI is watching your slides.');
+
+    // Start auto-capture
+    const mode = document.getElementById('captureMode').value;
+    if (mode === 'auto') {
+      const interval = parseInt(document.getElementById('captureInterval').value) * 1000;
+      state.captureTimer = setInterval(() => captureAndAnalyze(), interval);
+    }
+    // Initial capture after a short delay
+    setTimeout(() => captureAndAnalyze(), 2000);
+
+  } catch (err) {
+    addSystemMsg('Screen share cancelled or denied.');
+  }
+}
+
+function stopScreenCapture() {
+  if (state.screenStream) {
+    state.screenStream.getTracks().forEach(t => t.stop());
+    state.screenStream = null;
+  }
+  if (state.captureTimer) {
+    clearInterval(state.captureTimer);
+    state.captureTimer = null;
+  }
+  document.getElementById('screenVideo').style.display = 'none';
+  document.getElementById('screenSnapshot').style.display = 'none';
+  document.getElementById('screenPlaceholder').style.display = '';
+  document.getElementById('screenPreview').classList.remove('active');
+  state.isWatching = false;
+  setStatus('watching', false);
+  document.getElementById('btnScreen').innerHTML = '<span class="icon">🖥️</span> Share Screen';
+  document.getElementById('btnScreen').classList.remove('danger');
+  document.getElementById('btnSnapshot').disabled = true;
+  addSystemMsg('Screen share stopped.');
+}
+
+// ===== FRAME CAPTURE & VISION =====
+async function captureAndAnalyze() {
+  if (\!state.screenStream) return;
+  const video = document.getElementById('screenVideo');
+  const canvas = document.getElementById('screenCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const b64 = canvas.toDataURL('image/jpeg', 0.7);
+  const snapshot = document.getElementById('screenSnapshot');
+  snapshot.src = b64;
+  snapshot.style.display = 'block';
+
+  // Simple change detection
+  const hash = simpleHash(b64.slice(100, 500));
+  if (state.previousFrameHash === hash) return; // no change
+  state.previousFrameHash = hash;
+
+  state.lastSlideB64 = b64;
+  addSystemMsg('📸 Analyzing slide...');
+
+  try {
+    const analysis = await analyzeSlide(b64);
+    state.lastSlideDescription = analysis;
+
+    // Parse structured response
+    const parsed = parseCoachingResponse(analysis);
+    updateCoachingPanel(parsed);
+
+    addMsg('ai', analysis);
+    if (state.autoSpeak) speak(analysis);
+  } catch(err) {
+    addSystemMsg('Vision error: ' + err.message);
+  }
+}
+
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i);
+  return h;
+}
+
+async function analyzeSlide(b64Image) {
+  const provider = localStorage.getItem('stratus_visionProvider') || 'openai';
+  const personality = PERSONALITIES[localStorage.getItem('stratus_coachPersonality') || 'executive'];
+
+  const systemPrompt = STRATUS_CONTEXT + '\n\n' + personality + `\n\nYou are viewing a live slide from Jeremie's presentation. Analyze it and provide:\n1. **Talking Points**: 2-3 key things to say about this slide\n2. **Key Data**: Any numbers, charts, or stats to emphasize\n3. **Objection Prep**: What might the audience push back on?\n\nBe concise and actionable. This is whispered coaching — keep it tight.`;
+
+  const userMsg = 'Analyze this slide and coach me on what to say. Be concise — I need quick-glance bullet points.';
+
+  if (provider === 'openai') {
+    return await callOpenAIVision(systemPrompt, userMsg, b64Image);
+  } else if (provider === 'openrouter') {
+    return await callOpenRouterVision(systemPrompt, userMsg, b64Image);
+  } else if (provider === 'groq') {
+    return await callGroqVision(systemPrompt, userMsg, b64Image);
+  }
+}
+
+async function callOpenAIVision(system, user, b64) {
+  const key = localStorage.getItem('stratus_openaiKey');
+  if (\!key) throw new Error('OpenAI key not set. Click ⚙️ to configure.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({
+      model:'gpt-4o',
+      max_tokens:600,
+      messages:[
+        {role:'system',content:system},
+        {role:'user',content:[
+          {type:'text',text:user},
+          {type:'image_url',image_url:{url:b64,detail:'low'}}
+        ]}
+      ]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.choices[0].message.content;
+}
+
+async function callOpenRouterVision(system, user, b64) {
+  const key = localStorage.getItem('stratus_openrouterKey');
+  if (\!key) throw new Error('OpenRouter key not set. Click ⚙️.');
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({
+      model:'openai/gpt-4o',
+      max_tokens:600,
+      messages:[
+        {role:'system',content:system},
+        {role:'user',content:[
+          {type:'text',text:user},
+          {type:'image_url',image_url:{url:b64,detail:'low'}}
+        ]}
+      ]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices[0].message.content;
+}
+
+async function callGroqVision(system, user, b64) {
+  const key = localStorage.getItem('stratus_groqKey');
+  if (\!key) throw new Error('Groq key not set. Click ⚙️.');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({
+      model:'llama-3.2-90b-vision-preview',
+      max_tokens:600,
+      messages:[
+        {role:'system',content:system},
+        {role:'user',content:[
+          {type:'text',text:user},
+          {type:'image_url',image_url:{url:b64,detail:'low'}}
+        ]}
+      ]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices[0].message.content;
+}
+
+// ===== TEXT LLM (Groq) =====
+async function callGroqText(userMessage) {
+  const key = localStorage.getItem('stratus_groqKey');
+  if (\!key) throw new Error('Groq key not set. Click ⚙️.');
+  const personality = PERSONALITIES[localStorage.getItem('stratus_coachPersonality') || 'executive'];
+  const system = STRATUS_CONTEXT + '\n\n' + personality + (state.lastSlideDescription ? `\n\nCurrent slide context: ${state.lastSlideDescription}` : '');
+
+  // Build conversation history (last 10 messages)
+  const history = state.messages.slice(-10).map(m => ({
+    role: m.role === 'ai' ? 'assistant' : 'user',
+    content: m.text
+  })).filter(m => m.role);
+
+  const messages = [
+    {role:'system', content:system},
+    ...history,
+    {role:'user', content:userMessage}
+  ];
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:500, messages, temperature:0.7 })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.choices[0].message.content;
+}
+
+// ===== HANDLE USER INPUT =====
+async function handleUserInput(text) {
+  try {
+    const response = await callGroqText(text);
+    addMsg('ai', response);
+    if (state.autoSpeak) speak(response);
+  } catch(err) {
+    addSystemMsg('LLM error: ' + err.message);
+  }
+}
+
+// ===== TTS — KOKORO VIA REPLICATE =====
+async function speak(text) {
+  // Clean text for speech
+  const clean = text.replace(/\*\*/g,'').replace(/[#\-*]/g,'').replace(/\n+/g,'. ').trim();
+  if (\!clean) return;
+
+  const replicateKey = localStorage.getItem('stratus_replicateKey');
+  if (\!replicateKey) {
+    speakBrowser(clean);
+    return;
+  }
+
+  state.isSpeaking = true;
+  setStatus('speaking', true);
+
+  try {
+    // Create prediction
+    const voice = localStorage.getItem('stratus_kokoroVoice') || 'am_adam';
+    const res = await fetch('https://api.replicate.com/v1/models/jaaari/kokoro-82m/predictions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+replicateKey,
+        'Prefer':'wait'
+      },
+      body:JSON.stringify({
+        input:{
+          text: clean.slice(0, 500), // Kokoro has limits
+          voice: voice,
+          speed: 1.1
+        }
+      })
+    });
+    const data = await res.json();
+
+    if (data.status === 'succeeded' && data.output) {
+      const audioUrl = typeof data.output === 'string' ? data.output : data.output.audio_out || data.output;
+      const audio = new Audio(audioUrl);
+      audio.onended = () => {
+        state.isSpeaking = false;
+        setStatus('speaking', false);
+      };
+      audio.onerror = () => {
+        state.isSpeaking = false;
+        setStatus('speaking', false);
+        speakBrowser(clean); // fallback
+      };
+      await audio.play();
+    } else if (data.status === 'failed') {
+      throw new Error(data.error || 'Replicate prediction failed');
+    } else {
+      // Still processing — poll
+      pollReplicatePrediction(data.id, replicateKey, clean);
+    }
+  } catch(err) {
+    console.warn('Kokoro TTS error, falling back to browser:', err);
+    state.isSpeaking = false;
+    setStatus('speaking', false);
+    speakBrowser(clean);
+  }
+}
+
+async function pollReplicatePrediction(id, key, fallbackText) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const res = await fetch('https://api.replicate.com/v1/predictions/' + id, {
+        headers:{'Authorization':'Bearer '+key}
+      });
+      const data = await res.json();
+      if (data.status === 'succeeded' && data.output) {
+        const audioUrl = typeof data.output === 'string' ? data.output : data.output.audio_out || data.output;
+        const audio = new Audio(audioUrl);
+        audio.onended = () => { state.isSpeaking = false; setStatus('speaking', false); };
+        await audio.play();
+        return;
+      }
+      if (data.status === 'failed' || data.status === 'canceled') break;
+    } catch(e) { break; }
+  }
+  state.isSpeaking = false;
+  setStatus('speaking', false);
+  speakBrowser(fallbackText);
+}
+
+function speakBrowser(text) {
+  state.isSpeaking = true;
+  setStatus('speaking', true);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 1.05;
+  utter.pitch = 1;
+  utter.onend = () => { state.isSpeaking = false; setStatus('speaking', false); };
+  speechSynthesis.speak(utter);
+}
+
+function toggleAutoSpeak() {
+  state.autoSpeak = \!state.autoSpeak;
+  const btn = document.getElementById('btnSpeak');
+  btn.innerHTML = `<span class="icon">🔊</span> Auto-Speak: ${state.autoSpeak ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('active', state.autoSpeak);
+}
+
+// ===== PARSE COACHING RESPONSE =====
+function parseCoachingResponse(text) {
+  const result = {};
+  const tpMatch = text.match(/\*?\*?Talking Points?\*?\*?:?([\s\S]*?)(?=\*?\*?Key Data|Objection|$)/i);
+  const dataMatch = text.match(/\*?\*?Key Data\*?\*?:?([\s\S]*?)(?=\*?\*?Objection|$)/i);
+  const objMatch = text.match(/\*?\*?Objection\s*Prep?\*?\*?:?([\s\S]*?)$/i);
+
+  if (tpMatch) result.talkingPoints = tpMatch[1].trim();
+  if (dataMatch) result.data = dataMatch[1].trim();
+  if (objMatch) result.objections = objMatch[1].trim();
+  if (\!tpMatch && \!dataMatch && \!objMatch) result.raw = text;
+  return result;
+}
+
+// ===== INIT =====
+loadSettings();
+
+// Show settings on first load if no keys set
+if (\!localStorage.getItem('stratus_groqKey')) {
+  setTimeout(openSettings, 500);
+}
+</script>
+</body>
+</html>
